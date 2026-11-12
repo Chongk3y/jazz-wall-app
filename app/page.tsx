@@ -26,6 +26,8 @@ export default function Home() {
   const [draft, setDraft] = useState("");
   const [posts, setPosts] = useState<Post[]>(messages);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [pendingProfilePhoto, setPendingProfilePhoto] = useState<File | null>(null);
+  const [isSavingProfilePhoto, setIsSavingProfilePhoto] = useState(false);
   const [notePhoto, setNotePhoto] = useState<File | null>(null);
   const [notePhotoPreview, setNotePhotoPreview] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -131,25 +133,38 @@ export default function Home() {
     setNotePhotoPreview(URL.createObjectURL(file));
   }
 
-  async function handleProfilePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
+  function handleProfilePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setErrorMessage("Please select an image file.");
+      return;
+    }
 
+    if (profilePhoto?.startsWith("blob:")) URL.revokeObjectURL(profilePhoto);
     const previewUrl = URL.createObjectURL(file);
     setProfilePhoto(previewUrl);
+    setPendingProfilePhoto(file);
+    setErrorMessage(null);
+  }
+
+  async function saveProfilePhoto() {
+    if (!pendingProfilePhoto) return;
     if (!supabase) {
-      setErrorMessage("Supabase is not configured, so this photo is only a temporary preview.");
+      setErrorMessage("Supabase is not configured yet. Add your environment variables first.");
       return;
     }
     const client = supabase;
+    setIsSavingProfilePhoto(true);
 
-    const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const extension = pendingProfilePhoto.name.split(".").pop()?.toLowerCase() || "jpg";
     const path = `greg/profile-${Date.now()}.${extension}`;
-    const { error: uploadError } = await client.storage.from("profile-photos").upload(path, file, { upsert: true });
+    const { error: uploadError } = await client.storage.from("profile-photos").upload(path, pendingProfilePhoto, { upsert: true });
 
     if (uploadError) {
       setErrorMessage(`Could not upload photo: ${uploadError.message}`);
+      setIsSavingProfilePhoto(false);
       return;
     }
 
@@ -160,10 +175,15 @@ export default function Home() {
 
     if (profileError) {
       setErrorMessage(`Could not save profile photo: ${profileError.message}`);
+      setIsSavingProfilePhoto(false);
       return;
     }
 
+    if (profilePhoto?.startsWith("blob:")) URL.revokeObjectURL(profilePhoto);
     setProfilePhoto(publicUrl.publicUrl);
+    setPendingProfilePhoto(null);
+    setIsSavingProfilePhoto(false);
+    setErrorMessage(null);
   }
 
   return (
@@ -171,7 +191,7 @@ export default function Home() {
       <header className="mx-auto flex max-w-[1120px] items-center justify-between">
         <div className="flex items-center gap-2 text-xl font-extrabold tracking-[-0.04em]">
           <span className="grid size-9 place-items-center rounded-xl bg-[#3478f6] text-white shadow-lg shadow-blue-200">w</span>
-          wall
+          all
         </div>
         <span className="rounded-full border border-[#dfe5ee] bg-white/70 px-3 py-1 text-xs font-semibold text-[#667085]">Personal space</span>
       </header>
@@ -195,8 +215,13 @@ export default function Home() {
             )}
             <input type="file" accept="image/*" className="sr-only" onChange={handleProfilePhotoChange} />
           </label>
+          {pendingProfilePhoto && (
+            <Button className="mt-3 w-full" onClick={saveProfilePhoto} disabled={isSavingProfilePhoto}>
+              {isSavingProfilePhoto ? "Saving..." : "Save photo"}
+            </Button>
+          )}
           <section className="profile-heading mt-6">
-            <h1 className="m-0 text-3xl font-extrabold tracking-[-0.04em]">Greg Wientjes</h1>
+            <h1 className="m-0 text-3xl font-extrabold tracking-[-0.04em]">Jazzer Ong</h1>
           </section>
           <section className="sketch-card mt-6 overflow-hidden text-sm leading-[1.4]">
             <div className="border-b border-[#e6eaf0] px-5 py-3 text-xs font-bold uppercase tracking-[0.12em] text-[#667085]">Information</div>
@@ -247,7 +272,16 @@ export default function Home() {
           <div className="mt-1">
             {posts.map((post) => (
               <article className="wall-line py-3" key={post.id}>
-                <h3 className="hand m-0 text-[24px] font-bold leading-[1.05]">{post.author}</h3>
+                <div className="flex items-baseline gap-3">
+                  <h3 className="hand m-0 text-[24px] font-bold leading-[1.05]">{post.author}</h3>
+                  <time
+                    dateTime={post.created_at}
+                    suppressHydrationWarning
+                    className="text-xs font-medium text-[#8994a8]"
+                  >
+                    {new Date(post.created_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+                  </time>
+                </div>
                 <p className="hand m-0 mt-1 text-[21px] leading-[1.18] sm:text-[22px]">{post.content}</p>
                 {post.image_url && (
                   <img src={post.image_url} alt="Photo attached to note" className="mt-3 max-h-72 rounded-xl object-cover" />
