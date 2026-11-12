@@ -1,0 +1,68 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap");
+@import "tailwindcss";
+
+:root {
+  --paper: #f7f9fc;
+  --ink: #172033;
+  --muted: #667085;
+  --blue: #3478f6;
+  --line: #e6eaf0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(circle at 12% 0%, #edf4ff 0, transparent 30%), var(--paper);
+  color: var(--ink);
+  font-family: "DM Sans", sans-serif;
+}
+
+button, input, textarea {
+  font: inherit;
+}
+
+.hand {
+  font-family: "Manrope", sans-serif;
+}
+
+.sketch-border {
+  border: 1px solid #dfe5ee;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(27, 45, 80, .08);
+}
+
+.sketch-card {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .78);
+  box-shadow: 0 10px 28px rgba(28, 42, 68, .06);
+}
+
+.new-post {
+  border: 1px dashed #b8c7df;
+  background: rgba(255, 255, 255, .7);
+}
+
+.wall-line {
+  border-bottom: 1px solid var(--line);
+}
+
+@media (max-width: 760px) {
+  .wall-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-column {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    align-items: start;
+    gap: 18px;
+  }
+
+  .profile-column > .profile-image {
+    height: 150px;
+  }
+}
