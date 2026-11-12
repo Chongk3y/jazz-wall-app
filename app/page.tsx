@@ -11,16 +11,17 @@ type Post = {
   author_id: string | null;
   content: string;
   image_url: string | null;
+  image_urls: string[];
   created_at: string;
 };
 
 const messages: Post[] = [
-  { id: "anna", author: "Anna", author_id: null, content: "Hey Jazz, did you debug your coffee maker yet? Last cup tasted like JavaScript errors.", image_url: null, created_at: "2026-11-12T12:00:00Z" },
-  { id: "adelaida", author: "Adelaida", author_id: null, content: "Jazz, saw your last coding session—pretty sure you broke Stack Overflow again! 🚨", image_url: null, created_at: "2026-11-12T12:00:00Z" },
-  { id: "juho", author: "Juho", author_id: null, content: "Jazz, are you still coding in pajamas, or have you upgraded to full-time sweatpants mode?", image_url: null, created_at: "2026-11-12T12:00:00Z" },
-  { id: "maija", author: "Maija", author_id: null, content: "Jazz, rumor has it your computer has more stickers than code running on it. Confirm?", image_url: null, created_at: "2026-11-12T12:00:00Z" },
-  { id: "alex", author: "Alex", author_id: null, content: "Yo Jazz, just pulled an all-nighter on the assignment. Turns out sleep deprivation doesn’t improve coding skills. Weird!", image_url: null, created_at: "2026-11-12T12:00:00Z" },
-  { id: "sheryl", author: "Sheryl", author_id: null, content: "Jazz, when are we gonna deploy your latest dance moves to production? #4gileDancer", image_url: null, created_at: "2026-11-12T12:00:00Z" },
+  { id: "anna", author: "Anna", author_id: null, content: "Hey Jazz, did you debug your coffee maker yet? Last cup tasted like JavaScript errors.", image_url: null, image_urls: [], created_at: "2026-11-12T12:00:00Z" },
+  { id: "adelaida", author: "Adelaida", author_id: null, content: "Jazz, saw your last coding session—pretty sure you broke Stack Overflow again! 🚨", image_url: null, image_urls: [], created_at: "2026-11-12T12:00:00Z" },
+  { id: "juho", author: "Juho", author_id: null, content: "Jazz, are you still coding in pajamas, or have you upgraded to full-time sweatpants mode?", image_url: null, image_urls: [], created_at: "2026-11-12T12:00:00Z" },
+  { id: "maija", author: "Maija", author_id: null, content: "Jazz, rumor has it your computer has more stickers than code running on it. Confirm?", image_url: null, image_urls: [], created_at: "2026-11-12T12:00:00Z" },
+  { id: "alex", author: "Alex", author_id: null, content: "Yo Jazz, just pulled an all-nighter on the assignment. Turns out sleep deprivation doesn’t improve coding skills. Weird!", image_url: null, image_urls: [], created_at: "2026-11-12T12:00:00Z" },
+  { id: "sheryl", author: "Sheryl", author_id: null, content: "Jazz, when are we gonna deploy your latest dance moves to production? #4gileDancer", image_url: null, image_urls: [], created_at: "2026-11-12T12:00:00Z" },
 ];
 
 function formatPostAge(value: string, now: number) {
@@ -40,8 +41,8 @@ export default function Home() {
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [pendingProfilePhoto, setPendingProfilePhoto] = useState<File | null>(null);
   const [isSavingProfilePhoto, setIsSavingProfilePhoto] = useState(false);
-  const [notePhoto, setNotePhoto] = useState<File | null>(null);
-  const [notePhotoPreview, setNotePhotoPreview] = useState<string | null>(null);
+  const [notePhotos, setNotePhotos] = useState<File[]>([]);
+  const [notePhotoPreviews, setNotePhotoPreviews] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -73,7 +74,7 @@ export default function Home() {
 
       const [{ data: remotePosts, error: postsError }, { data: profile, error: profileError }] =
         await Promise.all([
-          client.from("posts").select("id, author, author_id, content, image_url, created_at").order("created_at", { ascending: false }).limit(50),
+          client.from("posts").select("id, author, author_id, content, image_url, image_urls, created_at").order("created_at", { ascending: false }).limit(50),
           client.from("profiles").select("photo_url").eq("id", "greg").maybeSingle(),
         ]);
 
@@ -118,11 +119,11 @@ export default function Home() {
       setErrorMessage("Your user session is not ready yet. Please try again.");
       return;
     }
-    let imageUrl: string | null = null;
+    const imageUrls: string[] = [];
 
-    if (notePhoto) {
+    for (const [index, notePhoto] of notePhotos.entries()) {
       const extension = notePhoto.name.split(".").pop()?.toLowerCase() || "jpg";
-      const path = `posts/post-${Date.now()}.${extension}`;
+      const path = `posts/post-${Date.now()}-${index}.${extension}`;
       const { error: uploadError } = await client.storage.from("post-photos").upload(path, notePhoto, { upsert: true });
 
       if (uploadError) {
@@ -131,13 +132,13 @@ export default function Home() {
       }
 
       const { data: publicUrl } = client.storage.from("post-photos").getPublicUrl(path);
-      imageUrl = publicUrl.publicUrl;
+      imageUrls.push(publicUrl.publicUrl);
     }
 
     const { data, error } = await client
       .from("posts")
-      .insert({ author: "Jazzer Ong", author_id: userId, content: text, image_url: imageUrl })
-      .select("id, author, author_id, content, image_url, created_at")
+      .insert({ author: "Jazzer Ong", author_id: userId, content: text, image_url: imageUrls[0] ?? null, image_urls: imageUrls })
+      .select("id, author, author_id, content, image_url, image_urls, created_at")
       .single();
 
     if (error) {
@@ -147,23 +148,22 @@ export default function Home() {
 
     setPosts((current) => current.some((post) => post.id === data.id) ? current : [data, ...current]);
     setDraft("");
-    if (notePhotoPreview) URL.revokeObjectURL(notePhotoPreview);
-    setNotePhoto(null);
-    setNotePhotoPreview(null);
+    notePhotoPreviews.forEach((preview) => URL.revokeObjectURL(preview));
+    setNotePhotos([]);
+    setNotePhotoPreviews([]);
   }
 
   function handleNotePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
+    const files = Array.from(event.target.files ?? []);
     event.target.value = "";
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
+    if (!files.length) return;
+    if (files.some((file) => !file.type.startsWith("image/"))) {
       setErrorMessage("Please select an image file.");
       return;
     }
 
-    if (notePhotoPreview) URL.revokeObjectURL(notePhotoPreview);
-    setNotePhoto(file);
-    setNotePhotoPreview(URL.createObjectURL(file));
+    setNotePhotos((current) => [...current, ...files]);
+    setNotePhotoPreviews((current) => [...current, ...files.map((file) => URL.createObjectURL(file))]);
   }
 
   function handleProfilePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -277,15 +277,19 @@ export default function Home() {
                 aria-label="Write a note"
                 className="hand min-h-20 w-full resize-none bg-transparent text-lg font-bold text-[#172033] outline-none placeholder:text-[#3478f6] placeholder:opacity-80"
               />
-              {notePhotoPreview && (
-                <img src={notePhotoPreview} alt="Attached note preview" className="mt-3 max-h-48 rounded-xl object-cover" />
+              {notePhotoPreviews.length > 0 && (
+                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {notePhotoPreviews.map((preview, index) => (
+                    <img key={preview} src={preview} alt={`Attached note preview ${index + 1}`} className="h-28 w-full rounded-xl object-cover" />
+                  ))}
+                </div>
               )}
               <div className="mt-2 flex items-center justify-between border-t border-[#e6eaf0] pt-3">
                 <div className="flex items-center gap-3">
                   <label htmlFor="note-photo" title="Add a photo to your note" className="grid size-9 cursor-pointer place-items-center rounded-lg text-[#3478f6] transition-colors hover:bg-[#eaf1ff]">
                     <ImagePlus size={20} />
                   </label>
-                  <input id="note-photo" type="file" accept="image/*" className="sr-only" onChange={handleNotePhotoChange} />
+                  <input id="note-photo" type="file" accept="image/*" multiple className="sr-only" onChange={handleNotePhotoChange} />
                   <span className="text-xs font-semibold text-[#667085]">{draft.length}/280</span>
                 </div>
                 <Button
@@ -316,8 +320,12 @@ export default function Home() {
                   </time>
                 </div>
                 <p className="hand m-0 mt-1 text-[21px] leading-[1.18] sm:text-[22px]">{post.content}</p>
-                {post.image_url && (
-                  <img src={post.image_url} alt="Photo attached to note" className="mt-3 max-h-72 rounded-xl object-cover" />
+                {(post.image_urls?.length > 0 || post.image_url) && (
+                  <div className="mt-3 grid max-w-xl grid-cols-2 gap-2 sm:grid-cols-3">
+                    {(post.image_urls?.length > 0 ? post.image_urls : [post.image_url]).map((imageUrl, index) => imageUrl && (
+                      <img key={imageUrl} src={imageUrl} alt={`Photo attached to note ${index + 1}`} className="h-36 w-full rounded-xl object-cover" />
+                    ))}
+                  </div>
                 )}
               </article>
             ))}

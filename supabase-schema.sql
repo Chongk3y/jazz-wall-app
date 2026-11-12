@@ -4,11 +4,13 @@ create table if not exists public.posts (
   author_id uuid,
   content text not null check (char_length(content) between 1 and 280),
   image_url text,
+  image_urls jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default now()
 );
 
 alter table public.posts add column if not exists author_id uuid;
 alter table public.posts add column if not exists image_url text;
+alter table public.posts add column if not exists image_urls jsonb not null default '[]'::jsonb;
 alter table public.posts enable row level security;
 create index if not exists posts_created_at_idx on public.posts (created_at desc);
 
