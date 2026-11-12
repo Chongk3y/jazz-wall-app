@@ -222,9 +222,9 @@ export default function Home() {
   return (
     <main className="min-h-screen px-4 py-5 sm:px-8 lg:px-12">
       <header className="mx-auto flex max-w-[1120px] items-center justify-between">
-        <div className="flex items-center gap-2 text-xl font-extrabold tracking-[-0.04em]">
-          <span className="grid size-9 place-items-center rounded-xl bg-[#3478f6] text-white shadow-lg shadow-blue-200">w</span>
-          all
+        <div className="flex items-center gap-1 text-xl font-extrabold tracking-[-0.04em]">
+          <span className="grid size-9 place-items-center rounded-xl bg-[#3478f6] text-white shadow-lg shadow-blue-200">W</span>
+          ALL
         </div>
         <span className="rounded-full border border-[#dfe5ee] bg-white/70 px-3 py-1 text-xs font-semibold text-[#667085]">Personal space</span>
       </header>
