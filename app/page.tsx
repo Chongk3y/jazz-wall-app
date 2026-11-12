@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ImagePlus, Share2 } from "lucide-react";
+import { ImagePlus, Share2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 
@@ -33,6 +33,13 @@ function formatPostAge(value: string, now: number) {
   return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
 }
 
+function getBentoImageClass(index: number, total: number) {
+  if (total === 3 && index === 0) return "col-span-2 row-span-2";
+  if (total === 4 && index === 0) return "row-span-2";
+  if (total > 4 && index === 0) return "col-span-2";
+  return "";
+}
+
 export default function Home() {
   const [now, setNow] = useState(() => Date.now());
   const [userId, setUserId] = useState<string | null>(null);
@@ -43,6 +50,7 @@ export default function Home() {
   const [isSavingProfilePhoto, setIsSavingProfilePhoto] = useState(false);
   const [notePhotos, setNotePhotos] = useState<File[]>([]);
   const [notePhotoPreviews, setNotePhotoPreviews] = useState<string[]>([]);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -280,7 +288,13 @@ export default function Home() {
               {notePhotoPreviews.length > 0 && (
                 <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {notePhotoPreviews.map((preview, index) => (
-                    <img key={preview} src={preview} alt={`Attached note preview ${index + 1}`} className="h-28 w-full rounded-xl object-cover" />
+                    <img
+                      key={preview}
+                      src={preview}
+                      alt={`Attached note preview ${index + 1}`}
+                      onClick={() => setSelectedImage(preview)}
+                      className="h-28 w-full cursor-zoom-in rounded-xl object-cover"
+                    />
                   ))}
                 </div>
               )}
@@ -321,17 +335,62 @@ export default function Home() {
                 </div>
                 <p className="hand m-0 mt-1 text-[21px] leading-[1.18] sm:text-[22px]">{post.content}</p>
                 {(post.image_urls?.length > 0 || post.image_url) && (
-                  <div className="mt-3 grid max-w-xl grid-cols-2 gap-2 sm:grid-cols-3">
-                    {(post.image_urls?.length > 0 ? post.image_urls : [post.image_url]).map((imageUrl, index) => imageUrl && (
-                      <img key={imageUrl} src={imageUrl} alt={`Photo attached to note ${index + 1}`} className="h-36 w-full rounded-xl object-cover" />
-                    ))}
-                  </div>
+                  (() => {
+                    const images = post.image_urls?.length > 0 ? post.image_urls : [post.image_url];
+                    if (images.length === 1 && images[0]) {
+                      return (
+                        <div className="mt-3 flex max-w-xl justify-start rounded-xl bg-[#f4f7fb] p-1">
+                          <img
+                            src={images[0]}
+                            alt="Photo attached to note"
+                            onClick={() => setSelectedImage(images[0])}
+                            className="max-h-96 max-w-full cursor-zoom-in rounded-lg object-contain"
+                          />
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="mt-3 grid max-w-xl auto-rows-[120px] grid-cols-2 gap-2 overflow-hidden rounded-xl sm:auto-rows-[150px] sm:grid-cols-3">
+                        {images.map((imageUrl, index) => imageUrl && (
+                          <img
+                            key={imageUrl}
+                            src={imageUrl}
+                            alt={`Photo attached to note ${index + 1}`}
+                            onClick={() => setSelectedImage(imageUrl)}
+                            className={`h-full w-full cursor-zoom-in rounded-lg object-cover ${getBentoImageClass(index, images.length)}`}
+                          />
+                        ))}
+                      </div>
+                    );
+                  })()
                 )}
               </article>
             ))}
           </div>
         </section>
       </div>
+
+      {selectedImage && (
+        <div
+          className="fixed inset-0 z-20 flex items-center justify-center bg-[#101828]/85 p-5"
+          onClick={() => setSelectedImage(null)}
+        >
+          <button
+            type="button"
+            aria-label="Close image preview"
+            onClick={() => setSelectedImage(null)}
+            className="absolute right-5 top-5 grid size-10 place-items-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/25"
+          >
+            <X size={22} />
+          </button>
+          <img
+            src={selectedImage}
+            alt="Expanded photo preview"
+            onClick={(event) => event.stopPropagation()}
+            className="max-h-[90vh] max-w-[95vw] rounded-xl object-contain shadow-2xl"
+          />
+        </div>
+      )}
 
     </main>
   );
