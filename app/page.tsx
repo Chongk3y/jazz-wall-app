@@ -59,16 +59,14 @@ export default function Home() {
     let active = true;
 
     async function loadWall() {
-      let { data: authData, error: authError } = await client.auth.getUser();
-      if (!authData.user && !authError) {
+      let { data: authData } = await client.auth.getUser();
+      if (!authData.user) {
         const anonymousAuth = await client.auth.signInAnonymously();
         authData = anonymousAuth.data;
-        authError = anonymousAuth.error;
-      }
-
-      if (authError || !authData.user) {
-        setErrorMessage(`Could not create a user session: ${authError?.message ?? "No user returned"}`);
-        return;
+        if (anonymousAuth.error || !authData.user) {
+          setErrorMessage(`Could not create a user session: ${anonymousAuth.error?.message ?? "No user returned"}`);
+          return;
+        }
       }
 
       setUserId(authData.user.id);
