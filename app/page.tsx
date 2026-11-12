@@ -15,12 +15,12 @@ type Post = {
 };
 
 const messages: Post[] = [
-  { id: "anna", author: "Anna", author_id: null, content: "Hey Jazz, did you debug your coffee maker yet? Last cup tasted like JavaScript errors.", image_url: null, created_at: "2026-01-06T12:00:00Z" },
-  { id: "adelaida", author: "Adelaida", author_id: null, content: "Jazz, saw your last coding session—pretty sure you broke Stack Overflow again! 🚨", image_url: null, created_at: "2026-01-05T12:00:00Z" },
-  { id: "juho", author: "Juho", author_id: null, content: "Jazz, are you still coding in pajamas, or have you upgraded to full-time sweatpants mode?", image_url: null, created_at: "2026-01-04T12:00:00Z" },
-  { id: "maija", author: "Maija", author_id: null, content: "Jazz, rumor has it your computer has more stickers than code running on it. Confirm?", image_url: null, created_at: "2026-01-03T12:00:00Z" },
-  { id: "alex", author: "Alex", author_id: null, content: "Yo Jazz, just pulled an all-nighter on the assignment. Turns out sleep deprivation doesn’t improve coding skills. Weird!", image_url: null, created_at: "2026-01-02T12:00:00Z" },
-  { id: "sheryl", author: "Sheryl", author_id: null, content: "Jazz, when are we gonna deploy your latest dance moves to production? #4gileDancer", image_url: null, created_at: "2026-01-01T12:00:00Z" },
+  { id: "anna", author: "Anna", author_id: null, content: "Hey Jazz, did you debug your coffee maker yet? Last cup tasted like JavaScript errors.", image_url: null, created_at: "2026-11-12T12:00:00Z" },
+  { id: "adelaida", author: "Adelaida", author_id: null, content: "Jazz, saw your last coding session—pretty sure you broke Stack Overflow again! 🚨", image_url: null, created_at: "2026-11-12T12:00:00Z" },
+  { id: "juho", author: "Juho", author_id: null, content: "Jazz, are you still coding in pajamas, or have you upgraded to full-time sweatpants mode?", image_url: null, created_at: "2026-11-12T12:00:00Z" },
+  { id: "maija", author: "Maija", author_id: null, content: "Jazz, rumor has it your computer has more stickers than code running on it. Confirm?", image_url: null, created_at: "2026-11-12T12:00:00Z" },
+  { id: "alex", author: "Alex", author_id: null, content: "Yo Jazz, just pulled an all-nighter on the assignment. Turns out sleep deprivation doesn’t improve coding skills. Weird!", image_url: null, created_at: "2026-11-12T12:00:00Z" },
+  { id: "sheryl", author: "Sheryl", author_id: null, content: "Jazz, when are we gonna deploy your latest dance moves to production? #4gileDancer", image_url: null, created_at: "2026-11-12T12:00:00Z" },
 ];
 
 function formatPostAge(value: string, now: number) {
