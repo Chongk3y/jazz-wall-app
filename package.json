@@ -12,6 +12,7 @@
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
+    "@supabase/supabase-js": "latest",
     "lucide-react": "latest",
     "class-variance-authority": "latest",
     "clsx": "latest",
