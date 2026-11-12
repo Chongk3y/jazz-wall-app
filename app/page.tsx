@@ -8,21 +8,33 @@ import { supabase } from "@/lib/supabase";
 type Post = {
   id: string;
   author: string;
+  author_id: string | null;
   content: string;
   image_url: string | null;
   created_at: string;
 };
 
 const messages: Post[] = [
-  { id: "anna", author: "Anna", content: "Hey Greg, did you debug your coffee maker yet? Last cup tasted like JavaScript errors.", image_url: null, created_at: "2026-01-06T12:00:00Z" },
-  { id: "adelaida", author: "Adelaida", content: "Greg, saw your last coding session—pretty sure you broke Stack Overflow again! 🚨", image_url: null, created_at: "2026-01-05T12:00:00Z" },
-  { id: "juho", author: "Juho", content: "Greg, are you still coding in pajamas, or have you upgraded to full-time sweatpants mode?", image_url: null, created_at: "2026-01-04T12:00:00Z" },
-  { id: "maija", author: "Maija", content: "Greg, rumor has it your computer has more stickers than code running on it. Confirm?", image_url: null, created_at: "2026-01-03T12:00:00Z" },
-  { id: "alex", author: "Alex", content: "Yo Greg, just pulled an all-nighter on the assignment. Turns out sleep deprivation doesn’t improve coding skills. Weird!", image_url: null, created_at: "2026-01-02T12:00:00Z" },
-  { id: "sheryl", author: "Sheryl", content: "Greg, when are we gonna deploy your latest dance moves to production? #4gileDancer", image_url: null, created_at: "2026-01-01T12:00:00Z" },
+  { id: "anna", author: "Anna", author_id: null, content: "Hey Jazz, did you debug your coffee maker yet? Last cup tasted like JavaScript errors.", image_url: null, created_at: "2026-01-06T12:00:00Z" },
+  { id: "adelaida", author: "Adelaida", author_id: null, content: "Jazz, saw your last coding session—pretty sure you broke Stack Overflow again! 🚨", image_url: null, created_at: "2026-01-05T12:00:00Z" },
+  { id: "juho", author: "Juho", author_id: null, content: "Jazz, are you still coding in pajamas, or have you upgraded to full-time sweatpants mode?", image_url: null, created_at: "2026-01-04T12:00:00Z" },
+  { id: "maija", author: "Maija", author_id: null, content: "Jazz, rumor has it your computer has more stickers than code running on it. Confirm?", image_url: null, created_at: "2026-01-03T12:00:00Z" },
+  { id: "alex", author: "Alex", author_id: null, content: "Yo Jazz, just pulled an all-nighter on the assignment. Turns out sleep deprivation doesn’t improve coding skills. Weird!", image_url: null, created_at: "2026-01-02T12:00:00Z" },
+  { id: "sheryl", author: "Sheryl", author_id: null, content: "Jazz, when are we gonna deploy your latest dance moves to production? #4gileDancer", image_url: null, created_at: "2026-01-01T12:00:00Z" },
 ];
 
+function formatPostAge(value: string, now: number) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "0 minutes ago";
+  const minutes = Math.max(0, Math.floor((now - date.getTime()) / (1000 * 60)));
+  if (minutes < 60) return `${minutes} ${minutes === 1 ? "minute" : "minutes"} ago`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
+}
+
 export default function Home() {
+  const [now, setNow] = useState(() => Date.now());
+  const [userId, setUserId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [posts, setPosts] = useState<Post[]>(messages);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
@@ -31,6 +43,11 @@ export default function Home() {
   const [notePhoto, setNotePhoto] = useState<File | null>(null);
   const [notePhotoPreview, setNotePhotoPreview] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (!supabase) {
@@ -42,9 +59,23 @@ export default function Home() {
     let active = true;
 
     async function loadWall() {
+      let { data: authData, error: authError } = await client.auth.getUser();
+      if (!authData.user && !authError) {
+        const anonymousAuth = await client.auth.signInAnonymously();
+        authData = anonymousAuth.data;
+        authError = anonymousAuth.error;
+      }
+
+      if (authError || !authData.user) {
+        setErrorMessage(`Could not create a user session: ${authError?.message ?? "No user returned"}`);
+        return;
+      }
+
+      setUserId(authData.user.id);
+
       const [{ data: remotePosts, error: postsError }, { data: profile, error: profileError }] =
         await Promise.all([
-          client.from("posts").select("id, author, content, image_url, created_at").order("created_at", { ascending: false }),
+          client.from("posts").select("id, author, author_id, content, image_url, created_at").order("created_at", { ascending: false }).limit(50),
           client.from("profiles").select("photo_url").eq("id", "greg").maybeSingle(),
         ]);
 
@@ -52,7 +83,7 @@ export default function Home() {
       if (postsError) {
         setErrorMessage(`Could not load posts: ${postsError.message}`);
       } else if (remotePosts) {
-        setPosts(remotePosts);
+        setPosts([...remotePosts, ...messages]);
       }
       if (profileError) {
         setErrorMessage(`Could not load profile: ${profileError.message}`);
@@ -85,6 +116,10 @@ export default function Home() {
       return;
     }
     const client = supabase;
+    if (!userId) {
+      setErrorMessage("Your user session is not ready yet. Please try again.");
+      return;
+    }
     let imageUrl: string | null = null;
 
     if (notePhoto) {
@@ -103,8 +138,8 @@ export default function Home() {
 
     const { data, error } = await client
       .from("posts")
-      .insert({ author: "You", content: text, image_url: imageUrl })
-      .select("id, author, content, image_url, created_at")
+      .insert({ author: "Jazzer Ong", author_id: userId, content: text, image_url: imageUrl })
+      .select("id, author, author_id, content, image_url, created_at")
       .single();
 
     if (error) {
@@ -226,8 +261,8 @@ export default function Home() {
           <section className="sketch-card mt-6 overflow-hidden text-sm leading-[1.4]">
             <div className="border-b border-[#e6eaf0] px-5 py-3 text-xs font-bold uppercase tracking-[0.12em] text-[#667085]">Information</div>
             <div className="space-y-6 px-5 py-5">
-              <div><p className="m-0 font-bold">Networks</p><p className="m-0">Stanford Alum</p></div>
-              <div><p className="m-0 font-bold">Current City</p><p className="m-0">Palo Alto, CA</p></div>
+              <div><p className="m-0 font-bold">Networks</p><p className="m-0">Western Mindanao State University</p></div>
+              <div><p className="m-0 font-bold">Current City</p><p className="m-0">Zamboanga City, Philippines</p></div>
             </div>
           </section>
         </aside>
@@ -279,7 +314,7 @@ export default function Home() {
                     suppressHydrationWarning
                     className="text-xs font-medium text-[#8994a8]"
                   >
-                    {new Date(post.created_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+                    {formatPostAge(post.created_at, now)}
                   </time>
                 </div>
                 <p className="hand m-0 mt-1 text-[21px] leading-[1.18] sm:text-[22px]">{post.content}</p>
